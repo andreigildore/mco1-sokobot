@@ -85,4 +85,3 @@ class SokoBot:
                     heapq.heappush(frontier, (heuristicVal, next_state, path + dir_char))
 
 
-
