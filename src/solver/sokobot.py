@@ -12,6 +12,18 @@ class SokoBot:
             total_distance += min_distance
         return total_distance
 
+    def isCornerDeadlock(self, crate_target, walls):
+        crate_target = list(crate_target)
+        up = (crate_target[0] - 1, crate_target[1]) in walls
+        down = (crate_target[0] + 1, crate_target[1]) in walls
+        left = (crate_target[0], crate_target[1] - 1) in walls
+        right = (crate_target[0], crate_target[1] + 1) in walls
+        
+        if (up and left) or (up and right) or (down and left) or (down and right):
+            return True
+
+        return False
+
     def solveSokobanPuzzle(self, width, height, mapData, itemsData):
         # YOU NEED TO REWRITE THE IMPLEMENTATION OF THIS METHOD TO MAKE THE BOT SMARTER
         # Default stupid behavior: Think (sleep) for 3 seconds, and then return a
@@ -19,15 +31,15 @@ class SokoBot:
         # that just moves left and right repeatedly.
         
         walls = set()
-        targets = set()
+        goals = set()
         player = None
         crates = set()
 
-        # stores the coordinates of the targets
+        # stores the coordinates of the goals
         for r in range(height):
             for c in range(width):
                 if mapData[r][c] == '.':
-                    targets.add((r, c))
+                    goals.add((r, c))
                 elif mapData[r][c] == '#':
                     walls.add((r, c))
         
@@ -45,7 +57,7 @@ class SokoBot:
         heapq.heapify(frontier)
         visited = set()
 
-        heuristic_start = self.computeHeuristic(list(crates), list(targets))
+        heuristic_start = self.computeHeuristic(list(crates), list(goals))
         heapq.heappush(frontier, (heuristic_start, start_state, ""))
         visited.add(start_state)
 
@@ -54,8 +66,8 @@ class SokoBot:
         while frontier:         # while frontier is not empty
             h, cur_state, path = heapq.heappop(frontier)
 
-            # check if all crates are in target spaces
-            if set(cur_state[1]) >= targets:
+            # check if all crates are in goal spaces
+            if set(cur_state[1]) >= goals:
                 return path
             
             for dir_char, dx, dy in moves:
@@ -74,6 +86,8 @@ class SokoBot:
                     # block if space behind the crate is a wall/diff crate
                     if crate_target in walls or crate_target in cur_state[1]:
                         continue
+                    if self.isCornerDeadlock(crate_target, walls) and crate_target not in goals:
+                        continue
                     # move crate
                     next_crates.remove(next_player)
                     next_crates.add(crate_target)
@@ -81,7 +95,5 @@ class SokoBot:
                 next_state = (next_player, tuple(next_crates))
                 if next_state not in visited:
                     visited.add(next_state)
-                    heuristicVal = self.computeHeuristic(list(next_crates), list(targets))
+                    heuristicVal = self.computeHeuristic(list(next_crates), list(goals))
                     heapq.heappush(frontier, (heuristicVal, next_state, path + dir_char))
-
-
